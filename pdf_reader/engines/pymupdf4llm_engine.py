@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import List, Sequence
+import re
 
 from .base import Cell, Table, TableExtractionEngine
 
@@ -29,8 +30,27 @@ class PyMuPDF4LLMTableEngine(TableExtractionEngine):
     def _is_separator_row(self, cells: List[str]) -> bool:
         return all(cell and all(ch in "-: " for ch in cell) for cell in cells)
 
+    def _looks_like_placeholder(self, text: str) -> bool:
+        return bool(re.fullmatch(r"col\d+", text.strip().lower()))
+
+    def _repair_header_row(self, rows: List[List[Cell]]) -> None:
+        if not rows:
+            return
+
+        header = rows[0]
+        if not any(self._looks_like_placeholder(cell.text) for cell in header[1:]):
+            return
+
+        raw_header_text = header[0].text.replace("<br>", " ")
+        split_tokens = raw_header_text.split()
+        if len(split_tokens) < len(header):
+            return
+
+        rows[0] = [Cell(text=token) for token in split_tokens[: len(header)]]
+
     def _finalize_table(self, rows: List[List[Cell]], tables: List[Table]) -> None:
         if rows and any(len(row) >= self.min_columns for row in rows):
+            self._repair_header_row(rows)
             tables.append([list(row) for row in rows])
         rows.clear()
 
