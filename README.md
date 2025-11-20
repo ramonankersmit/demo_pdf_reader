@@ -36,6 +36,12 @@ Resultaten opslaan als JSON:
 python app.py extract pad/naar/bestand.pdf --output tabels.json
 ```
 
+Resultaten opslaan als Excel en de JSON direct bekijken:
+
+```bash
+python app.py extract pad/naar/bestand.pdf --excel tabellen.xlsx --view-json
+```
+
 ## Architectuur
 
 - `pdf_reader/engines/base.py` bevat het abstracte contract.

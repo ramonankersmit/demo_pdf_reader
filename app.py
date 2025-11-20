@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
+from openpyxl import Workbook
+
 import typer
 
 from pdf_reader.engines.base import summarize_tables
@@ -27,6 +29,16 @@ def extract(
     pdf: Path = typer.Argument(..., exists=True, readable=True, help="Pad naar het PDF bestand"),
     engine: Optional[List[str]] = typer.Option(None, "--engine", "-e", help="Naam van de engine(s)"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Schrijf JSON resultaat naar dit bestand"),
+    excel_output: Optional[Path] = typer.Option(
+        None,
+        "--excel",
+        help="Schrijf een Excel bestand met de tabellen per engine",
+    ),
+    view_json: bool = typer.Option(
+        False,
+        "--view-json",
+        help="Toon de volledige JSON output in de terminal",
+    ),
 ) -> None:
     """Voer tabel extractie uit."""
     extractor = TableExtractor()
@@ -39,16 +51,39 @@ def extract(
             continue
         typer.echo(summarize_tables(result.tables))
         typer.echo("")
+    data = {
+        result.engine: [
+            [[cell.text for cell in row] for row in table]
+            for table in result.tables
+        ]
+        for result in results
+    }
+
     if output:
-        data = {
-            result.engine: [
-                [[cell.text for cell in row] for row in table]
-                for table in result.tables
-            ]
-            for result in results
-        }
         output.write_text(json.dumps(data, ensure_ascii=False, indent=2))
         typer.echo(f"Resultaat opgeslagen in {output}")
+
+    if excel_output:
+        workbook = Workbook()
+        # Remove the default empty sheet
+        default_sheet = workbook.active
+        workbook.remove(default_sheet)
+        for engine_name, tables in data.items():
+            worksheet = workbook.create_sheet(engine_name[:31] or "result")
+            if not tables:
+                worksheet.append(["Geen tabellen gevonden"])
+                continue
+            for idx, table in enumerate(tables, start=1):
+                worksheet.append([f"Table {idx}"])
+                for row in table:
+                    worksheet.append(row)
+                worksheet.append([])  # lege regel tussen tabellen
+        workbook.save(excel_output)
+        typer.echo(f"Excel bestand opgeslagen in {excel_output}")
+
+    if view_json:
+        typer.echo("Volledige JSON output:")
+        typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
