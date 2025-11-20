@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 
 from .engines.base import Table, TableExtractionEngine
+from .engines.camelot_engine import CamelotTableEngine
+from .engines.docling_engine import DoclingTableEngine
 from .engines.easyocr_engine import EasyOCRTableEngine
 from .engines.pymupdf4llm_engine import PyMuPDF4LLMTableEngine
 from .engines.text_layer import PDFPlumberSettings, PDFPlumberTableEngine
@@ -25,6 +27,8 @@ class TableExtractor:
         self.register(PDFPlumberTableEngine())
         self.register(EasyOCRTableEngine())
         self.register(PyMuPDF4LLMTableEngine())
+        self.register(DoclingTableEngine())
+        self.register(CamelotTableEngine())
 
     def register(self, engine: TableExtractionEngine) -> None:
         self._engines[engine.name] = engine
