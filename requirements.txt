@@ -1,0 +1,6 @@
+typer
+pdfplumber
+pymupdf
+pymupdf4llm
+easyocr
+numpy
