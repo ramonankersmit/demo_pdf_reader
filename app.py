@@ -39,10 +39,35 @@ def extract(
         "--view-json",
         help="Toon de volledige JSON output in de terminal",
     ),
+    tune_pdfplumber: bool = typer.Option(
+        False,
+        "--tune-pdfplumber",
+        help=(
+            "Gebruik pymupdf4llm als referentie en pas pdfplumber-instellingen"
+            " recursief aan om dichter bij het referentieresultaat te komen"
+        ),
+    ),
+    tuning_depth: int = typer.Option(
+        4,
+        "--tuning-depth",
+        min=0,
+        help="Aantal recursiestappen voor het afstemmen van pdfplumber",
+    ),
+    min_words: Optional[List[int]] = typer.Option(
+        None,
+        "--min-words",
+        help="Optionele lijst met min_words kandidaten voor het afstemmen",
+    ),
 ) -> None:
     """Voer tabel extractie uit."""
     extractor = TableExtractor()
-    results = extractor.extract(pdf, engines=engine)
+    results = extractor.extract(
+        pdf,
+        engines=engine,
+        tune_pdfplumber=tune_pdfplumber,
+        tuning_depth=tuning_depth,
+        min_word_options=min_words,
+    )
     # We'll also print summary to console
     for result in results:
         typer.secho(f"Resultaten voor {result.engine}", fg=typer.colors.GREEN, bold=True)
