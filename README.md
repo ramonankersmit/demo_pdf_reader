@@ -42,6 +42,13 @@ Resultaten opslaan als Excel en de JSON direct bekijken:
 python app.py extract pad/naar/bestand.pdf --excel tabellen.xlsx --view-json
 ```
 
+Meerdere PDF-bestanden in één keer verwerken en per bestand een JSON (en optioneel
+Excel) opslaan:
+
+```bash
+python app.py extract-directory samples output_map --excel
+```
+
 ## Architectuur
 
 - `pdf_reader/engines/base.py` bevat het abstracte contract.
