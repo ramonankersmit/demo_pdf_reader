@@ -5,3 +5,6 @@ pymupdf4llm
 easyocr
 numpy
 openpyxl
+camelot-py
+pandas
+docling

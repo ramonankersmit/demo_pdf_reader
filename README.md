@@ -55,6 +55,8 @@ python app.py extract-directory samples output_map --excel
 - `pdf_reader/engines/text_layer.py` gebruikt pdfplumber om tabellen uit de tekstlaag te halen.
 - `pdf_reader/engines/easyocr_engine.py` gebruikt EasyOCR en PyMuPDF om pagina's als afbeeldingen te verwerken.
 - `pdf_reader/engines/pymupdf4llm_engine.py` zet het document om naar Markdown met `pymupdf4llm` en parseert daaruit de tabellen.
+- `pdf_reader/engines/docling_engine.py` gebruikt Docling om een documentstructuur op te bouwen en daaruit de tabellen te lezen.
+- `pdf_reader/engines/camelot_engine.py` gebruikt Camelot om tabellen rechtstreeks uit PDF-pagina's te detecteren.
 - `pdf_reader/table_extractor.py` beheert de verschillende engines.
 
 Deze opzet maakt het eenvoudig om later extra engines toe te voegen.
