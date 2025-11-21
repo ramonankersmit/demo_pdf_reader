@@ -35,7 +35,10 @@ class DoclingTableEngine(TableExtractionEngine):
             )
         if self._converter is None:
             settings = DocumentConversionSettings() if DocumentConversionSettings else None
-            self._converter = DocumentConverter(conversion_settings=settings)
+            # ``DocumentConverter`` expects the configuration under the ``settings``
+            # argument. Passing it as ``conversion_settings`` raises a ``TypeError``
+            # with current docling versions.
+            self._converter = DocumentConverter(settings=settings)
         return self._converter
 
     def _table_to_matrix(self, table_obj: Any) -> List[List[str]]:
