@@ -13,12 +13,6 @@ except Exception as exc:  # pragma: no cover - keep import optional
     _docling_import_error = exc
     DocumentConverter = None  # type: ignore
 
-try:  # pragma: no cover - optional dependency
-    from docling.document_converter import DocumentConversionSettings
-except Exception:  # pragma: no cover - optional dependency
-    DocumentConversionSettings = None  # type: ignore
-
-
 class DoclingTableEngine(TableExtractionEngine):
     """Use Docling to parse documents and collect table data."""
 
@@ -34,11 +28,9 @@ class DoclingTableEngine(TableExtractionEngine):
                 f"Oorspronkelijke fout: {_docling_import_error}"
             )
         if self._converter is None:
-            settings = DocumentConversionSettings() if DocumentConversionSettings else None
-            # ``DocumentConverter`` expects the configuration under the ``settings``
-            # argument. Passing it as ``conversion_settings`` raises a ``TypeError``
-            # with current docling versions.
-            self._converter = DocumentConverter(settings=settings)
+            # ``DocumentConverter`` does not accept a ``settings`` argument in current
+            # docling versions; instantiate with defaults to avoid ``TypeError``.
+            self._converter = DocumentConverter()
         return self._converter
 
     def _table_to_matrix(self, table_obj: Any) -> List[List[str]]:
