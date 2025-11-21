@@ -50,11 +50,33 @@ class DoclingTableEngine(TableExtractionEngine):
             return [[str(cell) for cell in row] for row in dataframe.values.tolist()]
         return []
 
+    def _iter_tables(self, document: Any):
+        # Known attribute on Docling documents
+        for table_obj in getattr(document, "tables", []) or []:
+            yield table_obj
+
+        # Some Docling versions expose tables on a nested ``content`` object
+        content = getattr(document, "content", None)
+        if content is not None:
+            for table_obj in getattr(content, "tables", []) or []:
+                yield table_obj
+            for element in getattr(content, "elements", []) or []:
+                # Avoid importing Docling types directly; rely on duck-typing
+                if getattr(element, "type", "").lower() == "table":
+                    yield element
+                if element.__class__.__name__.lower().startswith("table"):
+                    yield element
+
     def extract(self, pdf_path: Path) -> Sequence[Table]:  # type: ignore[override]
         converter = self._ensure_converter()
-        document = converter.convert(str(pdf_path))
+        try:
+            document = converter.convert(str(pdf_path))
+        except Exception as exc:  # pragma: no cover - network/model failures
+            raise RuntimeError(
+                "Docling kon het document niet verwerken (controleer model-download of netwerktoegang)."
+            ) from exc
         tables: List[Table] = []
-        for table_obj in getattr(document, "tables", []):
+        for table_obj in self._iter_tables(document):
             matrix = self._table_to_matrix(table_obj)
             if not matrix:
                 continue

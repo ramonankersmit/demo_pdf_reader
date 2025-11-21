@@ -17,6 +17,7 @@ from .engines.text_layer import PDFPlumberSettings, PDFPlumberTableEngine
 class ExtractionResult:
     engine: str
     tables: Sequence[Table]
+    error: str | None = None
 
 
 class TableExtractor:
@@ -100,6 +101,13 @@ class TableExtractor:
             if tune_pdfplumber and engine.name == "pymupdf4llm":
                 # Already ran as baseline for tuning
                 continue
-            tables = engine.extract(pdf_path)
-            results.append(ExtractionResult(engine=engine.name, tables=tables))
+            try:
+                tables = engine.extract(pdf_path)
+                results.append(ExtractionResult(engine=engine.name, tables=tables))
+            except Exception as exc:  # pragma: no cover - defensive logging
+                results.append(
+                    ExtractionResult(
+                        engine=engine.name, tables=[], error=str(exc)
+                    )
+                )
         return results

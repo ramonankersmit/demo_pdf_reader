@@ -30,6 +30,13 @@ Alleen specifieke engines gebruiken:
 python app.py extract pad/naar/bestand.pdf -e pdfplumber -e easyocr -e pymupdf4llm
 ```
 
+Snel vergelijken (standaard `pymupdf4llm` en `camelot`, of specificeer zelf):
+
+```bash
+python app.py compare pad/naar/bestand.pdf
+python app.py compare pad/naar/bestand.pdf -e pymupdf4llm -e camelot -e pdfplumber
+```
+
 Resultaten opslaan als JSON:
 
 ```bash

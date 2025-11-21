@@ -54,6 +54,57 @@ class PyMuPDF4LLMTableEngine(TableExtractionEngine):
             tables.append([list(row) for row in rows])
         rows.clear()
 
+    def _extract_with_pymupdf(self, pdf_path: Path) -> List[Table]:
+        tables: List[Table] = []
+        try:
+            # ``fitz`` is the public import name of PyMuPDF, the same library
+            # pymupdf4llm builds on top of. Using it directly lets us leverage
+            # its native table detector without changing engines.
+            import fitz  # type: ignore
+        except Exception:
+            return tables
+
+        doc = fitz.open(pdf_path)
+        try:
+            for page in doc:
+                try:
+                    page_tables = page.find_tables()
+                except Exception:
+                    continue
+                for table in page_tables.tables:
+                    extracted = table.extract()
+                    if not extracted:
+                        continue
+                    row_cells: List[List[Cell]] = []
+                    for row in extracted:
+                        row_cells.append(
+                            [Cell(text=cell or "") for cell in row]
+                        )
+                    cleaned = self._remove_empty_columns(row_cells)
+                    if cleaned and any(len(row) >= self.min_columns for row in cleaned):
+                        tables.append(cleaned)
+        finally:
+            doc.close()
+        return tables
+
+    def _remove_empty_columns(self, table: Table) -> Table:
+        if not table:
+            return table
+
+        column_count = max(len(row) for row in table)
+        keep_indices: List[int] = []
+        for idx in range(column_count):
+            if any(idx < len(row) and row[idx].text.strip() for row in table):
+                keep_indices.append(idx)
+
+        if len(keep_indices) == column_count:
+            return table
+
+        cleaned: Table = []
+        for row in table:
+            cleaned.append([row[idx] for idx in keep_indices if idx < len(row)])
+        return cleaned
+
     def _markdown_to_tables(self, markdown: str) -> List[Table]:
         tables: List[Table] = []
         current_rows: List[List[Cell]] = []
@@ -73,6 +124,10 @@ class PyMuPDF4LLMTableEngine(TableExtractionEngine):
         return tables
 
     def extract(self, pdf_path: Path) -> Sequence[Table]:  # type: ignore[override]
+        tables = self._extract_with_pymupdf(pdf_path)
+        if tables:
+            return tables
+
         module = self._ensure_dependency()
         markdown = module.to_markdown(str(pdf_path))
         if isinstance(markdown, tuple):
