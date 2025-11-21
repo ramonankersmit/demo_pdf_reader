@@ -6,9 +6,11 @@ from typing import Any, List, Sequence
 
 from .base import Cell, Table, TableExtractionEngine
 
+_docling_import_error: Exception | None = None
 try:  # pragma: no cover - optional dependency
     from docling.document_converter import DocumentConverter, DocumentConversionSettings
-except Exception:  # pragma: no cover - keep import optional
+except Exception as exc:  # pragma: no cover - keep import optional
+    _docling_import_error = exc
     DocumentConverter = None  # type: ignore
     DocumentConversionSettings = None  # type: ignore
 
@@ -23,7 +25,9 @@ class DoclingTableEngine(TableExtractionEngine):
     def _ensure_converter(self) -> Any:
         if DocumentConverter is None:
             raise RuntimeError(
-                "docling is niet geïnstalleerd. Voeg het toe aan requirements en installeer het."
+                "docling is niet geïnstalleerd of kon niet geladen worden. "
+                "Installeer het met `pip install docling` en controleer eventuele importfouten. "
+                f"Oorspronkelijke fout: {_docling_import_error}"
             )
         if self._converter is None:
             settings = DocumentConversionSettings() if DocumentConversionSettings else None
