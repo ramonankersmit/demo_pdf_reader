@@ -8,10 +8,14 @@ from .base import Cell, Table, TableExtractionEngine
 
 _docling_import_error: Exception | None = None
 try:  # pragma: no cover - optional dependency
-    from docling.document_converter import DocumentConverter, DocumentConversionSettings
+    from docling.document_converter import DocumentConverter
 except Exception as exc:  # pragma: no cover - keep import optional
     _docling_import_error = exc
     DocumentConverter = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    from docling.document_converter import DocumentConversionSettings
+except Exception:  # pragma: no cover - optional dependency
     DocumentConversionSettings = None  # type: ignore
 
 
