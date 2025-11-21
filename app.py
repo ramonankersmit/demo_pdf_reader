@@ -60,6 +60,12 @@ def _write_outputs(
         typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
 
 
+def _table_shape(table: list[list[str]]) -> str:
+    row_count = len(table)
+    col_count = max((len(row) for row in table), default=0)
+    return f"{row_count}x{col_count}"
+
+
 def _extract_pdf(
     pdf: Path,
     extractor: TableExtractor,
@@ -77,6 +83,8 @@ def _extract_pdf(
     )
     for result in results:
         typer.secho(f"Resultaten voor {result.engine}", fg=typer.colors.GREEN, bold=True)
+        if result.error:
+            typer.secho(f"Fout: {result.error}", fg=typer.colors.RED)
         if not result.tables:
             typer.echo("Geen tabellen gevonden\n")
             continue
@@ -127,7 +135,7 @@ def extract(
         "--min-words",
         help="Optionele lijst met min_words kandidaten voor het afstemmen",
     ),
-) -> None:
+    ) -> None:
     """Voer tabel extractie uit."""
     extractor = TableExtractor()
     results, data = _extract_pdf(
@@ -139,6 +147,47 @@ def extract(
         min_words,
     )
     _write_outputs(data, results, output, excel_output, view_json)
+
+
+@app.command()
+def compare(
+    pdf: Path = typer.Argument(..., exists=True, readable=True, help="Pad naar het PDF bestand"),
+    engine: Optional[List[str]] = typer.Option(
+        None,
+        "--engine",
+        "-e",
+        help="Vergelijk specifieke engines (standaard pymupdf4llm en camelot)",
+    ),
+) -> None:
+    """Vergelijk in vogelvlucht de resultaten van meerdere engines."""
+
+    default_engines = ["pymupdf4llm", "camelot"]
+    engines = engine or default_engines
+
+    extractor = TableExtractor()
+    results = extractor.extract(pdf, engines=engines)
+
+    typer.secho("Samenvatting per engine", fg=typer.colors.BLUE, bold=True)
+    for result in results:
+        typer.secho(f"- {result.engine}", fg=typer.colors.GREEN, bold=True)
+        if result.error:
+            typer.secho(f"  fout: {result.error}", fg=typer.colors.RED)
+            continue
+        typer.echo(f"  tabellen: {len(result.tables)}")
+        for idx, table in enumerate(result.tables, start=1):
+            typer.echo(f"    tabel {idx}: {_table_shape([[c.text for c in row] for row in table])}")
+
+    if len(results) == 2 and all(not r.error for r in results):
+        typer.secho("\nVerschillen per index", fg=typer.colors.BLUE, bold=True)
+        max_tables = max(len(results[0].tables), len(results[1].tables))
+        for idx in range(max_tables):
+            typer.echo(f"Tabel {idx + 1}:")
+            for result in results:
+                if idx < len(result.tables):
+                    shape = _table_shape([[c.text for c in row] for row in result.tables[idx]])
+                    typer.echo(f"  {result.engine}: {shape}")
+                else:
+                    typer.echo(f"  {result.engine}: geen tabel op deze positie")
 
 
 @app.command()

@@ -6,7 +6,6 @@ from typing import List, Sequence, Tuple
 
 import fitz  # PyMuPDF
 import numpy as np
-from easyocr import Reader
 
 from .base import Cell, Table, TableExtractionEngine
 
@@ -22,6 +21,8 @@ class EasyOCRTableEngine(TableExtractionEngine):
 
     def _ensure_reader(self) -> Reader:
         if self._reader is None:
+            from easyocr import Reader
+
             self._reader = Reader(self.languages, gpu=False)
         return self._reader
 
