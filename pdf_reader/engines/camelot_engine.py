@@ -47,15 +47,20 @@ class CamelotTableEngine(TableExtractionEngine):
         # utils class and the copy imported in ``camelot.handlers``.
         class _ImmediateTempDir:
             def __enter__(self):
+                # Using ``TemporaryDirectory`` avoids manual permissions juggling,
+                # but we manage cleanup ourselves to silence spurious
+                # ``PermissionError`` exceptions on Windows when Ghostscript or
+                # PyPDF still holds a handle to a generated page snapshot.
                 self._tempdir = tempfile.TemporaryDirectory()
-                return self._tempdir.__enter__()
+                return self._tempdir.name
 
             def __exit__(self, exc_type, exc_val, exc_tb):
-                try:
-                    return self._tempdir.__exit__(exc_type, exc_val, exc_tb)
-                finally:
-                    # Best-effort cleanup to avoid Windows file-lock errors.
-                    shutil.rmtree(self._tempdir.name, ignore_errors=True)
+                # Ignore errors during cleanup instead of propagating the
+                # Windows-specific ``PermissionError`` that would otherwise
+                # bubble up as a failed extraction.
+                shutil.rmtree(self._tempdir.name, ignore_errors=True)
+                self._tempdir = None
+                return False
 
         module.utils.TemporaryDirectory = _ImmediateTempDir
         if hasattr(module, "handlers"):
