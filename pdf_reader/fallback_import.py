@@ -16,12 +16,8 @@ DEFAULT_ENGINE_ORDER: Tuple[str, ...] = ("pymupdf4llm", "pdfplumber")
 @dataclass
 class FallbackImportResult:
     engine: str
-    table: Table
+    tables: list[Table]
     markdown: str
-
-
-def _ensure_min_rows(table: Table, min_rows: int) -> bool:
-    return len(table) >= min_rows if table is not None else False
 
 
 def _pad_row(row: Sequence[str], width: int) -> Sequence[str]:
@@ -53,16 +49,17 @@ def table_to_markdown(table: Table) -> str:
 def import_table_with_fallback(
     pdf_path: Path | str,
     engine_order: Iterable[str] | None = None,
-    min_rows: int = 10,
+    min_rows: int | None = None,
     extractor: TableExtractor | None = None,
 ) -> FallbackImportResult:
     """
     Probeer een PDF te importeren met configurabele enginevolgorde.
 
     De standaard volgorde is ``pymupdf4llm`` gevolgd door ``pdfplumber``. Per
-    engine wordt gekeken of er minimaal één tabel is en of de eerste tabel ten
-    minste ``min_rows`` rijen heeft. Zo niet, dan wordt de volgende engine
-    geprobeerd. Als geen enkele engine voldoet, wordt ``ImportError`` geworpen.
+    engine wordt gekeken of er minimaal één tabel is. Als ``min_rows`` is
+    opgegeven, moet de eerste tabel minimaal zoveel rijen bevatten; zo niet, dan
+    wordt de volgende engine geprobeerd. Als geen enkele engine voldoet, wordt
+    ``ImportError`` geworpen.
 
     Returns
     -------
@@ -93,11 +90,11 @@ def import_table_with_fallback(
             continue
 
         first_table = tables[0]
-        if not _ensure_min_rows(first_table, min_rows):
+        if min_rows is not None and len(first_table) < min_rows:
             continue
 
         markdown = table_to_markdown(first_table)
-        return FallbackImportResult(result.engine, first_table, markdown)
+        return FallbackImportResult(result.engine, tables, markdown)
 
     raise ImportError(
         "Geen geschikte engine gevonden die een tabel met voldoende rijen kon extraheren"
@@ -108,7 +105,7 @@ def import_directory_with_fallback(
     input_dir: Path | str,
     output_excel: Path | str,
     engine_order: Iterable[str] | None = None,
-    min_rows: int = 10,
+    min_rows: int | None = None,
     extractor: TableExtractor | None = None,
 ) -> Dict[str, FallbackImportResult | ImportError]:
     """
@@ -154,8 +151,11 @@ def import_directory_with_fallback(
             results[pdf.name] = result
             worksheet.append(["Engine", result.engine])
             worksheet.append([])
-            for row in result.table:
-                worksheet.append([cell.text for cell in row])
+            for idx, table in enumerate(result.tables, start=1):
+                worksheet.append([f"Table {idx}"])
+                for row in table:
+                    worksheet.append([cell.text for cell in row])
+                worksheet.append([])
         except ImportError as exc:
             results[pdf.name] = exc
             worksheet.append(["Fout", str(exc)])

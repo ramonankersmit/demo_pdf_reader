@@ -55,7 +55,9 @@ class ImportTableWithFallbackTests(unittest.TestCase):
         backup_engine = StubEngine("pdfplumber", tables=[build_table(11)])
         extractor = StubExtractor([first_engine, backup_engine])
 
-        result = import_table_with_fallback(Path("dummy.pdf"), extractor=extractor)
+        result = import_table_with_fallback(
+            Path("dummy.pdf"), extractor=extractor, min_rows=10
+        )
 
         self.assertEqual(result.engine, "pdfplumber")
         self.assertIn("r10c1", result.markdown)
@@ -66,7 +68,9 @@ class ImportTableWithFallbackTests(unittest.TestCase):
         extractor = StubExtractor([first_engine, backup_engine])
 
         with self.assertRaises(ImportError):
-            import_table_with_fallback(Path("dummy.pdf"), extractor=extractor)
+            import_table_with_fallback(
+                Path("dummy.pdf"), extractor=extractor, min_rows=10
+            )
 
 
 class ImportDirectoryWithFallbackTests(unittest.TestCase):
@@ -99,7 +103,9 @@ class ImportDirectoryWithFallbackTests(unittest.TestCase):
 
             output_excel = base_dir / "results.xlsx"
 
-            results = import_directory_with_fallback(base_dir, output_excel, extractor=extractor)
+            results = import_directory_with_fallback(
+                base_dir, output_excel, extractor=extractor, min_rows=10
+            )
 
             self.assertIn("first.pdf", results)
             self.assertIn("second.pdf", results)
@@ -111,8 +117,8 @@ class ImportDirectoryWithFallbackTests(unittest.TestCase):
             first_sheet = workbook[workbook.sheetnames[0]]
             self.assertEqual(first_sheet.cell(row=1, column=1).value, "Engine")
             self.assertEqual(first_sheet.cell(row=1, column=2).value, "pymupdf4llm")
-            self.assertEqual(first_sheet.cell(row=3, column=1).value, "r0c0")
-            self.assertEqual(first_sheet.cell(row=3, column=2).value, "r0c1")
+            self.assertEqual(first_sheet.cell(row=4, column=1).value, "r0c0")
+            self.assertEqual(first_sheet.cell(row=4, column=2).value, "r0c1")
 
     def test_raises_when_no_pdfs_found(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
