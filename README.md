@@ -56,6 +56,12 @@ Excel) opslaan:
 python app.py extract-directory samples output_map --excel
 ```
 
+Fallback-import voor alle PDF-bestanden in een map uitvoeren en de resultaten in één Excel-bestand opslaan vanuit een Windows (DOS) command prompt:
+
+```cmd
+python -c "from pdf_reader.fallback_import import import_directory_with_fallback; import_directory_with_fallback(r'samples', 'resultaten.xlsx')"
+```
+
 ## Architectuur
 
 - `pdf_reader/engines/base.py` bevat het abstracte contract.
